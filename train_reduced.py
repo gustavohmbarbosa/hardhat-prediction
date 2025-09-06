@@ -8,7 +8,7 @@ from ultralytics import YOLO
 # ---------------- FIXOS ----------------
 DATA_YAML   = "hardhat.yaml"
 IMGSZ       = 320
-EPOCHS      = 80
+EPOCHS      = 10
 BATCH       = 16
 WORKERS     = 2
 PATIENCE    = 15
@@ -16,27 +16,13 @@ PROJECT     = "runs_train"
 NAME        = "reduced_min_320"
 DEVICE      = "cuda:0" if torch.cuda.is_available() else "cpu"
 MEASURE     = True
-DEPTH_MULT  = 0.27 # default is ~0.33
-WIDTH_MULT  = 0.20 # default is ~0.25
 YAML_OUT    = Path("yolov8n_min.yaml")
 # --------------------------------------
-
-def write_min_yaml(path: Path, depth: float, width: float):
-    content = f"""# Auto-generated minimal YOLOv8n for 1 class (helmet)
-nc: 1
-scales:
-  depth_multiple: {depth}
-  width_multiple: {width}
-"""
-    path.write_text(content, encoding="utf-8")
-    print(f"[yaml] wrote {path.resolve()}")
 
 def main():
     print(f"[env] Torch {torch.__version__} | CUDA build: {torch.version.cuda} | CUDA avail: {torch.cuda.is_available()}")
     if torch.cuda.is_available():
         print(f"[env] GPU: {torch.cuda.get_device_name(0)}")
-
-    write_min_yaml(YAML_OUT, DEPTH_MULT, WIDTH_MULT)
 
     print(f"[train] model={YAML_OUT} data={DATA_YAML} imgsz={IMGSZ} epochs={EPOCHS} batch={BATCH} device={DEVICE}")
     model = YOLO(str(YAML_OUT))

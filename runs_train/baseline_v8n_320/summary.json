@@ -1,0 +1,13 @@
+{
+  "model": "yolov8n.pt",
+  "data": "hardhat.yaml",
+  "imgsz": 320,
+  "epochs": 60,
+  "batch": 16,
+  "device": "cuda:0",
+  "run_dir": "D:\\Users\\gusta\\projects\\rp\\runs_train\\train2",
+  "best": "D:\\Users\\gusta\\projects\\rp\\runs_train\\train2\\weights\\best.pt",
+  "last": "D:\\Users\\gusta\\projects\\rp\\runs_train\\train2\\weights\\last.pt",
+  "report": {},
+  "time": "2025-09-06T18:46:05"
+}
