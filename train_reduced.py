@@ -8,12 +8,12 @@ from ultralytics import YOLO
 # ---------------- FIXOS ----------------
 DATA_YAML   = "hardhat.yaml"
 IMGSZ       = 320
-EPOCHS      = 10
-BATCH       = 16
+EPOCHS      = 100
+BATCH       = 32
 WORKERS     = 2
 PATIENCE    = 15
 PROJECT     = "runs_train"
-NAME        = "reduced_min_320"
+NAME        = "reduced_min_320_v2"
 DEVICE      = "cuda:0" if torch.cuda.is_available() else "cpu"
 MEASURE     = True
 YAML_OUT    = Path("yolov8n_min.yaml")

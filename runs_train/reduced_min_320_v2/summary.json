@@ -1,0 +1,17 @@
+{
+  "stage": "reduced_arch",
+  "model": "yolov8n_min.yaml",
+  "data": "hardhat.yaml",
+  "imgsz": 320,
+  "epochs": 100,
+  "batch": 32,
+  "device": "cuda:0",
+  "run_dir": "D:\\Users\\gusta\\projects\\rp\\runs_train\\reduced_min_320_v2",
+  "best": "D:\\Users\\gusta\\projects\\rp\\runs_train\\reduced_min_320_v2\\weights\\best.pt",
+  "last": "D:\\Users\\gusta\\projects\\rp\\runs_train\\reduced_min_320_v2\\weights\\last.pt",
+  "report": {
+    "params_m": 1.5387,
+    "flops_g": 0.5748
+  },
+  "time": "2025-09-07T00:07:11"
+}
