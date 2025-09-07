@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Resumo de modelos YOLO (Ultralytics):
+Resumo de modelos YOLO (Ultralytics) com 'Train Time (min)':
 - Coleta runs em runs_train/* e runs_prune/*
 - Lê metrics do results.csv e summary.json (se existirem)
-- Mede tamanho do arquivo best.pt
-- Mede Params/FLOPs (thop) e latência sintética (forward)
-- Inclui também checkpoints "pruned*.pt" (pré-fine-tune) encontrados na raiz
+- Mede tamanho do best.pt, Params/FLOPs (thop) e latência sintética
+- Inclui checkpoints "pruned*.pt" (pré-fine-tune) na raiz
+- Adiciona coluna 'Train Time (min)' estimada via timestamps dos arquivos do run
 
 Requisitos:
   pip install ultralytics pandas thop
@@ -16,7 +16,7 @@ import csv
 import json
 import time
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 
 import torch
 import pandas as pd
@@ -52,7 +52,6 @@ def read_ultralytics_results_csv(run_dir: Path) -> Dict[str, Any]:
         for k in ["metrics/recall(B)", "recall"]:
             if k in last: out["recall"] = float(last[k])
     except Exception:
-        # fallback simples
         try:
             with results_csv.open("r", newline="") as f:
                 rows = list(csv.DictReader(f))
@@ -118,6 +117,25 @@ def measure_latency(model_path: Path, imgsz: int, device: str,
     except Exception:
         return None
 
+def compute_run_duration_minutes(run_dir: Path) -> Optional[float]:
+    """
+    Estima a duração do treino pelo intervalo [primeiro_timestamp, último_timestamp]
+    dos arquivos dentro do diretório do run (recursivo).
+    """
+    try:
+        times: List[float] = []
+        for p in run_dir.rglob("*"):
+            if p.is_file():
+                st = p.stat()
+                times.append(st.st_mtime)
+                # incluir st_ctime em Windows pode “empurrar” início para trás; preferimos mtime
+        if not times:
+            return None
+        dt = max(times) - min(times)
+        return round(dt / 60.0, 1)  # minutos, uma casa decimal
+    except Exception:
+        return None
+
 def collect_runs(dirs: List[Path]) -> List[Path]:
     items = []
     for d in dirs:
@@ -128,11 +146,9 @@ def collect_runs(dirs: List[Path]) -> List[Path]:
     return items
 
 def collect_pruned_checkpoints(root: Path) -> List[Path]:
-    # pega pruned.pt e também pruned_*.pt na raiz (ou subpastas rasas)
     paths = []
-    for patt in ["pruned.pt", "pruned_*.pt"]:
+    for patt in ["pruned.pt", "pruned_*.pt", "pruned_full.pt"]:
         paths += list(root.glob(patt))
-    # ignora se houver pastas
     return [p for p in paths if p.is_file()]
 
 def main():
@@ -140,13 +156,14 @@ def main():
 
     rows = []
 
-    # 1) Runs normais (train/prune fine-tune)
+    # 1) Runs (train e fine-tune)
     runs = collect_runs(RUNS_DIRS)
     for run in runs:
         best = run / "weights" / "best.pt"
         size_mb = round(best.stat().st_size / (1024*1024), 3) if best.exists() else None
         res  = read_ultralytics_results_csv(run)
         summ = read_summary_json(run)
+        dur_min = compute_run_duration_minutes(run)
 
         row = {
             "Kind": "run",
@@ -160,6 +177,7 @@ def main():
             "Size (MB)": size_mb,
             "mAP@0.5": res.get("mAP@0.5"),
             "mAP@0.5:0.95": res.get("mAP@0.5:0.95"),
+            "Train Time (min)": dur_min,
         }
 
         if MEASURE_PARAMS_FLOPS and best.exists():
@@ -171,7 +189,7 @@ def main():
 
         rows.append(row)
 
-    # 2) Checkpoints podados pré-fine-tune (pruned*.pt)
+    # 2) Checkpoints podados pré-fine-tune
     pruned_list = collect_pruned_checkpoints(ROOT)
     for ckpt in pruned_list:
         try:
@@ -191,9 +209,9 @@ def main():
             "Size (MB)": size_mb,
             "mAP@0.5": None,
             "mAP@0.5:0.95": None,
+            "Train Time (min)": None,
         }
 
-        # dá pra medir params/flops/latency, mas não há results.csv (sem FT)
         if MEASURE_PARAMS_FLOPS:
             row.update(measure_params_flops(ckpt, IMGSZ, DEVICE))
         if MEASURE_LATENCY:
@@ -208,7 +226,6 @@ def main():
         return
 
     df = pd.DataFrame(rows)
-    # ordena: primeiro por Kind (pruned_ckpt depois run), depois por Params/Size
     if "Params (M)" in df.columns:
         df = df.sort_values(by=["Kind", "Params (M)", "Size (MB)"], ascending=[True, True, True], na_position="last")
     else:
@@ -218,7 +235,6 @@ def main():
     out_md  = Path("model_report.md")
     df.to_csv(out_csv, index=False)
 
-    # markdown bonitinho
     def df_to_md(d: pd.DataFrame) -> str:
         d2 = d.copy()
         for c in d2.columns:
