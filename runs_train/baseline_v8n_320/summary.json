@@ -1,5 +1,5 @@
 {
-  "model": "yolov8n.pt",
+  "model": "models\\baseline_v8n_320.yaml",
   "data": "hardhat.yaml",
   "imgsz": 320,
   "epochs": 60,

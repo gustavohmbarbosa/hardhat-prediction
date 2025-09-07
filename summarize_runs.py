@@ -173,7 +173,6 @@ def main():
             "ImgSize": summ.get("imgsz", IMGSZ),
             "Epochs": summ.get("epochs", ""),
             "Batch":  summ.get("batch", ""),
-            "File": str(best),
             "Size (MB)": size_mb,
             "mAP@0.5": res.get("mAP@0.5"),
             "mAP@0.5:0.95": res.get("mAP@0.5:0.95"),
@@ -205,7 +204,6 @@ def main():
             "ImgSize": IMGSZ,
             "Epochs": "",
             "Batch": "",
-            "File": str(ckpt),
             "Size (MB)": size_mb,
             "mAP@0.5": None,
             "mAP@0.5:0.95": None,
@@ -231,8 +229,10 @@ def main():
     else:
         df = df.sort_values(by=["Kind", "Size (MB)"], ascending=[True, True], na_position="last")
 
-    out_csv = Path("model_report.csv")
-    out_md  = Path("model_report.md")
+    reports_dir = ROOT / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    out_csv = reports_dir / "model_report.csv"
+    out_md  = reports_dir / "model_report.md"
     df.to_csv(out_csv, index=False)
 
     def df_to_md(d: pd.DataFrame) -> str:

@@ -2,3 +2,4 @@ dataset
 test
 eval_out
 predict_out
+yolo11n.pt

@@ -1,6 +1,6 @@
 {
   "stage": "reduced_arch",
-  "model": "yolov8n_min.yaml",
+  "model": "models\\reduced_min_320_v1.yaml",
   "data": "hardhat.yaml",
   "imgsz": 320,
   "epochs": 10,
