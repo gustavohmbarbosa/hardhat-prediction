@@ -141,3 +141,102 @@ Exemplo:
   ```bash
   python verify-cuda.py
   ```
+
+## Outros Scripts
+
+### 📸 Predição em uma imagem | `predict_one.py`
+
+**O que faz:**
+Carrega o modelo escolhido, executa a **predição em uma única imagem**, salva:
+
+* a **imagem com as detecções desenhadas** (`outdir/vis/<nome>_pred.jpg`);
+* um **.txt** com as detecções (classe, confiança, x1 y1 x2 y2).
+
+**Uso:**
+
+```bash
+python predict_one.py \
+  --weights runs_train/reduced_min_320_v2/weights/best.pt \
+  --image dataset/images/test/obra_101.jpg \
+  --outdir predict_out \
+  --imgsz 320 \
+  --conf 0.25
+```
+
+**Parâmetros principais:**
+
+* `--weights` → caminho do modelo (.pt).
+* `--image` → caminho da imagem de entrada.
+* `--outdir` → pasta de saída (default: `predict_out`).
+* `--imgsz` → tamanho de entrada para a inferência (default: 320).
+* `--conf` → limiar de confiança (default: 0.25).
+
+**Saídas:**
+
+* `predict_out/vis/obra_101_pred.jpg` (overlay com as caixas)
+* `predict_out/obra_101_pred.txt` (linhas: `class conf x1 y1 x2 y2`)
+
+---
+
+### 🧪 Teste no conjunto de teste (ou subset) | `test_model.py`
+
+Compara **Pred vs Real** em `images/test`.
+
+**O que faz:**
+
+* Lê `images/test` e `labels/test` a partir do `hardhat.yaml`.
+* Roda predição, faz **matching por IoU** (padrão `0.5`) e contabiliza **TP/FP/FN**.
+* Gera **visualizações** com **GT (verde)** vs **Pred (vermelho)**.
+* Salva **CSV por imagem** e **summary.json** com métricas agregadas.
+
+**Casos de uso:**
+
+1. **Avaliar todo o test:**
+
+```bash
+python test_model.py \
+  --weights runs_train/reduced_min_320_v2/weights/best.pt \
+  --data hardhat.yaml \
+  --outdir eval_out \
+  --imgsz 320 \
+  --conf 0.25 \
+  --nms_iou 0.5 \
+  --match_iou 0.5
+```
+
+2. **Avaliar somente 3 imagens específicas (pelos nomes-base):**
+
+```bash
+python test_model.py \
+  --weights runs_train/reduced_min_320_v2/weights/best.pt \
+  --data hardhat.yaml \
+  --outdir eval_out_subset \
+  --imgsz 320 \
+  --conf 0.25 \
+  --nms_iou 0.5 \
+  --match_iou 0.5 \
+  --subset obra_101,obra_202,capacete_777
+```
+
+**Parâmetros principais:**
+
+* `--weights` → modelo (.pt) a avaliar.
+* `--data` → YAML do dataset (ex.: `hardhat.yaml`).
+* `--outdir` → pasta de saída (default: `eval_out`).
+* `--imgsz` → tamanho de entrada da inferência (default: 320).
+* `--conf` → limiar de confiança (default: 0.25).
+* `--nms_iou` → IoU para NMS das predições (default: 0.5).
+* `--match_iou` → IoU para considerar **TP** no matching Pred×GT (default: 0.5).
+* `--subset` → lista de nomes-base (sem extensão) separados por vírgula para avaliar só um subconjunto.
+
+**Saídas:**
+
+* `eval_out/vis/<nome>_cmp.jpg` → imagem com **GT (verde)** e **Pred (vermelho)**.
+* `eval_out/per_image.csv` → métricas por imagem (`TP/FP/FN`, `precision`, `recall`, `f1`, `mean_IoU@match_iou`).
+* `eval_out/summary.json` → agregado global (totais de TP/FP/FN e métricas globais).
+
+**Leitura rápida das métricas:**
+
+* **precision** alto / **recall** baixo → modelo “exigente” (menos falsos positivos, mais falsos negativos).
+* **recall** alto / **precision** baixo → modelo “permissivo” (mais cobertura, porém mais falsos positivos).
+* **mean\_IoU\@0.5** → quão bem as caixas **corretas** sobrepõem o GT (média de IoU dos TPs).
