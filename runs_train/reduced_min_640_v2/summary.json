@@ -1,0 +1,17 @@
+{
+  "stage": "reduced_arch",
+  "model": "models\\reduced_min_640_v2.yaml",
+  "data": "hardhat.yaml",
+  "imgsz": 640,
+  "epochs": 150,
+  "batch": 16,
+  "device": "cuda:0",
+  "run_dir": "runs_train\\reduced_min_640_v2",
+  "best": "runs_train\\reduced_min_640_v2\\weights\\best.pt",
+  "last": "runs_train\\reduced_min_640_v2\\weights\\last.pt",
+  "report": {
+    "params_m": 1.5387,
+    "flops_g": 2.2993
+  },
+  "time": "2025-09-08T12:31:20"
+}

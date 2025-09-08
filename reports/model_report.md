@@ -8,4 +8,5 @@
 | run    | runs_train\reduced_min_320_v1 | reduced_arch | models\reduced_min_320_v1.yaml |       320 |       10 |      16 |       3.603 |    0.7638 |         0.4493 |              979.5 |       1.7992 |      0.6469 |          7.181 |
 | run    | runs_train\baseline_v8n_320   |              | models\baseline_v8n_320.yaml   |       320 |       60 |      16 |       5.923 |    0.8879 |         0.5803 |             1111.8 |       3.011  |      1.0243 |          6.659 |
 | run    | runs_train\baseline_v8n_640     | reduced_arch | models\baseline_v8n_640.yaml     |       640 |      150 |      16 |       5.971 |    0.9154 |         0.6157 |              400.6 | 3.0110       | 1.0243      | 11.1440        |
+| run    | runs_train\reduced_min_640_v2   | reduced_arch | models\reduced_min_640_v2.yaml   |       640 |      150 |      16 |       3.154 |    0.9078 |         0.6026 |              340.8 | 1.5387       | 0.5748      | 10.3850        |
 | run    | runs_train\reduced_min_640_v3 | reduced_arch | models\reduced_min_640_v3.yaml |       640 |      150 |      16 |       2.164 |    0.9003 |         0.5943 |              353.5 |       1.0207 |      0.4562 |         11.355 |
