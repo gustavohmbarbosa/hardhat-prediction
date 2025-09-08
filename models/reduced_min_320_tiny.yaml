@@ -1,0 +1,45 @@
+# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# YOLOv8 detecção - versão reduzida para 1 classe (capacete)
+# Saídas: P3/8 e P4/16 (P5 removido)
+
+# -------- Parâmetros gerais --------
+nc: 1  # número de classes (capacete)
+scales:  # apenas informativo aqui; os valores efetivos estão nas camadas abaixo
+  # [depth, width, max_channels]
+  n: [0.20, 0.15, 768]
+  s: [0.33, 0.50, 1024]
+  m: [0.67, 0.75, 768]
+  l: [1.00, 1.00, 512]
+  x: [1.00, 1.25, 512]
+
+# -------- Backbone (mais fino e raso) --------
+# Formato: [from, repeats, module, args]
+backbone:
+  - [-1, 1, Conv, [32, 3, 2]]     # 0-P1/2   (64 -> 32)
+  - [-1, 1, Conv, [64, 3, 2]]     # 1-P2/4   (128 -> 64)
+  - [-1, 1, C2f, [64, True]]      # 2        (repeats 3 -> 1)
+  - [-1, 1, Conv, [128, 3, 2]]    # 3-P3/8   (256 -> 128)
+  - [-1, 2, C2f, [128, True]]     # 4        (repeats 6 -> 2)
+  - [-1, 1, Conv, [256, 3, 2]]    # 5-P4/16  (512 -> 256)
+  - [-1, 2, C2f, [256, True]]     # 6        (repeats 6 -> 2)
+  - [-1, 1, Conv, [512, 3, 2]]    # 7-P5/32  (1024 -> 512)
+  - [-1, 1, C2f, [512, True]]     # 8        (repeats 3 -> 1)
+  - [-1, 1, SPPF, [512, 5]]       # 9        (1024 -> 512)
+
+# -------- Head (sem P5, só P3/P4) --------
+head:
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]  # 10: up P5->P4
+  - [[-1, 6], 1, Concat, [1]]                   # 11: concat com P4 do backbone (idx 6)
+  - [-1, 1, C2f, [256]]                         # 12: (512 -> 256) e repeats 3 -> 1
+
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]  # 13: up P4->P3
+  - [[-1, 4], 1, Concat, [1]]                   # 14: concat com P3 do backbone (idx 4)
+  - [-1, 1, C2f, [128]]                         # 15: (256 -> 128) e repeats 3 -> 1  (P3/8)
+
+  - [-1, 1, Conv, [128, 3, 2]]                  # 16: down P3->P4  (256 -> 128)
+  - [[-1, 12], 1, Concat, [1]]                  # 17: concat com P4 do head (idx 12)
+  - [-1, 1, C2f, [256]]                         # 18: (512 -> 256) e repeats 3 -> 1  (P4/16)
+
+  # Removido o caminho para P5 (linhas 19~21 do original)
+
+  - [[15, 18], 1, Detect, [nc]]                 # Detect em P3 e P4
