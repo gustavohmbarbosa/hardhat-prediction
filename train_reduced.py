@@ -7,16 +7,16 @@ from ultralytics import YOLO
 
 # ---------------- FIXOS ----------------
 DATA_YAML   = "hardhat.yaml"
-IMGSZ       = 320
+IMGSZ       = 640
 EPOCHS      = 150
-BATCH       = 32
-WORKERS     = 2
+BATCH       = 16
+WORKERS     = 8
 PATIENCE    = 15
 PROJECT     = "runs_train"
-NAME        = "reduced_min_320_v3"
+NAME        = "baseline_v8n_640"
 DEVICE      = "cuda:0" if torch.cuda.is_available() else "cpu"
 MEASURE     = True
-YAML_OUT    = Path("models/reduced_min_320_v3.yaml")
+YAML_OUT    = Path("models/baseline_v8n_640.yaml")
 # --------------------------------------
 
 def main():
