@@ -7,11 +7,11 @@
   "batch": 16,
   "device": "cuda:0",
   "run_dir": "runs_train\\reduced_min_640_v3",
-  "best": "runs_train\\reduced_min_640_v3\\weights\\best.pt",
-  "last": "runs_train\\reduced_min_640_v3\\weights\\last.pt",
+  "best": "runs_train\\reduced_min_640_v32\\weights\\best.pt",
+  "last": "runs_train\\reduced_min_640_v32\\weights\\last.pt",
   "report": {
     "params_m": 1.0207,
     "flops_g": 1.8248
   },
-  "time": "2025-09-07T21:16:46"
+  "time": "2025-09-08T19:08:42"
 }

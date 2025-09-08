@@ -13,10 +13,10 @@ BATCH       = 16
 WORKERS     = 8
 PATIENCE    = 15
 PROJECT     = "runs_train"
-NAME        = "baseline_v8n_640"
+NAME        = "reduced_min_640_v3"
 DEVICE      = "cuda:0" if torch.cuda.is_available() else "cpu"
 MEASURE     = True
-YAML_OUT    = Path("models/baseline_v8n_640.yaml")
+YAML_OUT    = Path("models/reduced_min_640_v3.yaml")
 # --------------------------------------
 
 def main():

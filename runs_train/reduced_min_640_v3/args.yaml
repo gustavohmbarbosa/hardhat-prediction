@@ -11,9 +11,9 @@ save: true
 save_period: -1
 cache: false
 device: '0'
-workers: 4
+workers: 8
 project: runs_train
-name: reduced_min_640_v3
+name: reduced_min_640_v32
 exist_ok: false
 pretrained: true
 optimizer: auto
@@ -102,4 +102,4 @@ auto_augment: randaugment
 erasing: 0.4
 cfg: null
 tracker: botsort.yaml
-save_dir: runs_train\reduced_min_640_v3
+save_dir: runs_train\reduced_min_640_v32
