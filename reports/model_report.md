@@ -9,7 +9,7 @@
 | run    | runs_train\reduced_min_320_v1   | reduced_arch | models\reduced_min_320_v1.yaml   |       320 |       10 |      16 | runs_train\reduced_min_320_v1\weights\best.pt   |       3.603 |    0.7638 |         0.4493 |              997.9 | 1.7992       | 0.6469      | 7.0910         |
 | run    | runs_train\baseline_v8n_320     |              | models\baseline_v8n_320.yaml     |       320 |       60 |      16 | runs_train\baseline_v8n_320\weights\best.pt     |       5.923 |    0.8879 |         0.5803 |             1128.2 | 3.0110       | 1.0243      | 7.2300         |
 | run    | runs_train\baseline_v8n_640     | reduced_arch | models\baseline_v8n_640.yaml     |       640 |      150 |      16 | runs_train\baseline_v8n_640\weights\best.pt     |       5.971 |    0.9154 |         0.6157 |                0   | 3.0110       | 1.0243      | 6.8210         |
-| run    | runs_train\reduced_min_640_v2   | reduced_arch | models\reduced_min_640_v2.yaml   |       640 |      150 |      16 |       3.154 |    0.9078 |         0.6026 |              340.8 | 1.5387       | 0.5748      | 10.3850        |
+| run    | runs_train\reduced_min_640_v2   | reduced_arch | models\reduced_min_640_v2.yaml   |       640 |      150 |      16 | runs_train\reduced_min_640_v2\weights\best.pt   |       3.154 |    0.9078 |         0.6026 |              340.8 | 1.5387       | 0.5748      | 10.3850        |
 | run    | runs_train\reduced_min_640_v3   | reduced_arch | models\reduced_min_640_v3.yaml   |       640 |      150 |      16 | runs_train\reduced_min_640_v3\weights\best.pt   |       2.164 |    0.903  |         0.5963 |              384.7 |       1.0207 |      0.4562 |         10.911 |
 
 ## Gráficos
