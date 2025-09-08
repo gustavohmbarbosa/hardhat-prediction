@@ -2,7 +2,8 @@
 
 | Kind   | Run                           | Stage        | Model                          |   ImgSize |   Epochs |   Batch |   Size (MB) |   mAP@0.5 |   mAP@0.5:0.95 |   Train Time (min) |   Params (M) |   FLOPs (G) |   Latency (ms) |
 |:-------|:------------------------------|:-------------|:-------------------------------|----------:|---------:|--------:|------------:|----------:|---------------:|-------------------:|-------------:|------------:|---------------:|
-| run    | runs_train\reduced_min_320_v3 | reduced_arch | models\reduced_min_320_v3.yaml |       320 |      150 |      32 |       2.126 |    0.8651 |         0.5477 |              214.6 |       1.0207 |      0.4562 |          6.332 |
-| run    | runs_train\reduced_min_320_v2 | reduced_arch | models\reduced_min_320_v2.yaml |       320 |      100 |      32 |       3.109 |    0.861  |         0.5402 |              909.2 |       1.5387 |      0.5748 |          7.28  |
-| run    | runs_train\reduced_min_320_v1 | reduced_arch | models\reduced_min_320_v1.yaml |       320 |       10 |      16 |       3.603 |    0.7638 |         0.4493 |              979.5 |       1.7992 |      0.6469 |          7.181 |
-| run    | runs_train\baseline_v8n_320   |              | models\baseline_v8n_320.yaml   |       320 |       60 |      16 |       5.923 |    0.8879 |         0.5803 |             1111.8 |       3.011  |      1.0243 |          6.659 |
+| run    | runs_train\reduced_min_320_v3 | reduced_arch | models\reduced_min_320_v3.yaml |       320 |      150 |      32 |       2.126 |    0.8651 |         0.5477 |                0   |       1.0207 |      0.4562 |         6.332 |
+| run    | runs_train\reduced_min_640_v3 | reduced_arch | models\reduced_min_640_v3.yaml |       640 |      150 |      16 |       2.164 |    0.9003 |         0.5943 |              353.5 |       1.0207 |      0.4562 |         11.355 |
+| run    | runs_train\reduced_min_320_v2 | reduced_arch | models\reduced_min_320_v2.yaml |       320 |      100 |      32 |       3.109 |    0.861  |         0.5402 |                0   |       1.5387 |      0.5748 |         7.28 |
+| run    | runs_train\reduced_min_320_v1 | reduced_arch | models\reduced_min_320_v1.yaml |       320 |       10 |      16 |       3.603 |    0.7638 |         0.4493 |                0   |       1.7992 |      0.6469 |         7.181 |
+| run    | runs_train\baseline_v8n_320   |              | models\baseline_v8n_320.yaml   |       320 |       60 |      16 |       5.923 |    0.8879 |         0.5803 |                0   |       3.011  |      1.0243 |         6.659 |
