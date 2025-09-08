@@ -4,3 +4,4 @@ thop
 pandas
 tabulate
 torch_pruning
+matplotlib

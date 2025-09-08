@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Resumo de modelos YOLO (Ultralytics) com 'Train Time (min)':
+Resumo de modelos YOLO (Ultralytics) com 'Train Time (min)' + GRÁFICOS:
 - Coleta runs em runs_train/* e runs_prune/*
 - Lê metrics do results.csv e summary.json (se existirem)
 - Mede tamanho do best.pt, Params/FLOPs (thop) e latência sintética
 - Inclui checkpoints "pruned*.pt" (pré-fine-tune) na raiz
 - Adiciona coluna 'Train Time (min)' estimada via timestamps dos arquivos do run
+- Gera gráficos comparativos (PNG) e referencia no model_report.md
 
 Requisitos:
-  pip install ultralytics pandas thop
+  pip install ultralytics pandas thop matplotlib
 """
 
 import csv
 import json
 import time
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 
 import torch
 import pandas as pd
@@ -118,21 +119,16 @@ def measure_latency(model_path: Path, imgsz: int, device: str,
         return None
 
 def compute_run_duration_minutes(run_dir: Path) -> Optional[float]:
-    """
-    Estima a duração do treino pelo intervalo [primeiro_timestamp, último_timestamp]
-    dos arquivos dentro do diretório do run (recursivo).
-    """
     try:
         times: List[float] = []
         for p in run_dir.rglob("*"):
             if p.is_file():
                 st = p.stat()
                 times.append(st.st_mtime)
-                # incluir st_ctime em Windows pode “empurrar” início para trás; preferimos mtime
         if not times:
             return None
         dt = max(times) - min(times)
-        return round(dt / 60.0, 1)  # minutos, uma casa decimal
+        return round(dt / 60.0, 1)
     except Exception:
         return None
 
@@ -150,6 +146,235 @@ def collect_pruned_checkpoints(root: Path) -> List[Path]:
     for patt in ["pruned.pt", "pruned_*.pt", "pruned_full.pt"]:
         paths += list(root.glob(patt))
     return [p for p in paths if p.is_file()]
+
+# ---------------- PLOTS (versão com Pareto + labels) ----------------
+def make_plots(df: pd.DataFrame, out_dir: Path) -> List[str]:
+    """
+    Gera PNGs comparativos e retorna a lista de caminhos (strings) para inserir no .md.
+    Inclui:
+      - Scatter Params x mAP@0.5 (com Pareto e labels) -> scatter_params_vs_map50.png
+      - Scatter Params x mAP@0.5:0.95 (com Pareto e labels) -> scatter_params_vs_map5095.png
+      - Scatter Latência x mAP@0.5 (com Pareto e labels) -> scatter_latency_vs_map50.png
+      - Barras: Params por modelo -> bar_params.png
+      - Barras: Tamanho por modelo -> bar_size.png
+      - Barras: Latência por modelo -> bar_latency.png
+      - Barras: Eficiência (mAP@0.5 / Params) -> bar_eff_map50_per_param.png
+      - Barras: Eficiência (mAP@0.5 / MB) -> bar_eff_map50_per_mb.png
+    """
+    saved = []
+    try:
+        import matplotlib.pyplot as plt
+        import numpy as np
+    except Exception as e:
+        print(f"[plots] matplotlib ausente ou falhou ({e}); pulando gráficos.")
+        return saved
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Apenas runs (com métricas) para comparar desempenho
+    dfr = df[df["Kind"] == "run"].copy()
+
+    def label_from_run(v: str) -> str:
+        try:
+            return Path(v).name
+        except Exception:
+            return str(v)
+
+    dfr["Label"] = dfr["Run"].map(label_from_run)
+
+    def fmt2(x):
+        return f"{float(x):.2f}"
+
+    # ---------------- helpers ----------------
+    def annotate_points(ax, x, y, labels, extra_vals=None):
+        """
+        Desenha rótulos com Nome + valores (2 casas). extra_vals pode ser dict {"xname": arr, "yname": arr}
+        """
+        for i in range(len(x)):
+            text = labels[i]
+            if extra_vals is not None:
+                parts = []
+                if "x" in extra_vals:
+                    parts.append(fmt2(extra_vals["x"][i]))
+                if "y" in extra_vals:
+                    parts.append(fmt2(extra_vals["y"][i]))
+                if parts:
+                    text += f" ({', '.join(parts)})"
+            ax.annotate(text, (x[i], y[i]), xytext=(4, 4), textcoords="offset points", fontsize=8)
+
+    def pareto_indices_cost_minimize_benefit_maximize(cost, benefit):
+        """
+        Retorna índices da fronteira de Pareto quando queremos MINIMIZAR cost e MAXIMIZAR benefit.
+        Estratégia: ordenar por cost asc, manter apenas pontos que sejam 'recorde' em benefit.
+        """
+        order = np.argsort(cost)
+        best_benefit = -np.inf
+        keep = []
+        for idx in order:
+            b = benefit[idx]
+            if b > best_benefit + 1e-12:
+                keep.append(idx)
+                best_benefit = b
+        return np.array(keep, dtype=int)
+
+    # ------------- Scatter: Params × mAP@0.5 (com Pareto) -------------
+    if {"Params (M)", "mAP@0.5"}.issubset(dfr.columns):
+        d0 = dfr.dropna(subset=["Params (M)", "mAP@0.5"]).copy()
+        if len(d0) >= 2:
+            x = d0["Params (M)"].to_numpy(dtype=float)
+            y = d0["mAP@0.5"].to_numpy(dtype=float)
+            sz = d0["Size (MB)"].fillna(d0["Size (MB)"].median()).clip(0.1, None).to_numpy(dtype=float)
+            labels = d0["Label"].tolist()
+            plt.figure(figsize=(9, 5))
+            ax = plt.gca()
+            sc = ax.scatter(x, y, s=sz * 12.0, alpha=0.85)
+            annotate_points(ax, x, y, labels, extra_vals={"x": x, "y": y})
+            # Pareto
+            pidx = pareto_indices_cost_minimize_benefit_maximize(x, y)
+            px, py = x[pidx], y[pidx]
+            order = np.argsort(px)
+            ax.plot(px[order], py[order], marker="o", linewidth=1.5)
+            ax.set_xlabel("Parâmetros (M)")
+            ax.set_ylabel("mAP@0.5")
+            ax.set_title("Params (M) vs mAP@0.5 (bolha ~ tamanho do arquivo)")
+            ax.grid(True, alpha=0.3)
+            p = out_dir / "scatter_params_vs_map50.png"
+            plt.tight_layout(); plt.savefig(p, dpi=160); plt.close()
+            saved.append(str(p))
+
+    # ------------- Scatter: Params × mAP@0.5:0.95 (com Pareto) -------------
+    if {"Params (M)", "mAP@0.5:0.95"}.issubset(dfr.columns):
+        d0 = dfr.dropna(subset=["Params (M)", "mAP@0.5:0.95"]).copy()
+        if len(d0) >= 2:
+            x = d0["Params (M)"].to_numpy(dtype=float)
+            y = d0["mAP@0.5:0.95"].to_numpy(dtype=float)
+            sz = d0["Size (MB)"].fillna(d0["Size (MB)"].median()).clip(0.1, None).to_numpy(dtype=float)
+            labels = d0["Label"].tolist()
+            plt.figure(figsize=(9, 5))
+            ax = plt.gca()
+            ax.scatter(x, y, s=sz * 12.0, alpha=0.85)
+            annotate_points(ax, x, y, labels, extra_vals={"x": x, "y": y})
+            pidx = pareto_indices_cost_minimize_benefit_maximize(x, y)
+            px, py = x[pidx], y[pidx]
+            order = np.argsort(px)
+            ax.plot(px[order], py[order], marker="o", linewidth=1.5)
+            ax.set_xlabel("Parâmetros (M)")
+            ax.set_ylabel("mAP@0.5:0.95")
+            ax.set_title("Params (M) vs mAP@0.5:0.95 (bolha ~ tamanho do arquivo)")
+            ax.grid(True, alpha=0.3)
+            p = out_dir / "scatter_params_vs_map5095.png"
+            plt.tight_layout(); plt.savefig(p, dpi=160); plt.close()
+            saved.append(str(p))
+
+    # ------------- Scatter: Latência × mAP@0.5 (com Pareto) -------------
+    if {"Latency (ms)", "mAP@0.5"}.issubset(dfr.columns):
+        d0 = dfr.dropna(subset=["Latency (ms)", "mAP@0.5"]).copy()
+        if len(d0) >= 2:
+            x = d0["Latency (ms)"].to_numpy(dtype=float)
+            y = d0["mAP@0.5"].to_numpy(dtype=float)
+            sz = d0["Size (MB)"].fillna(d0["Size (MB)"].median()).clip(0.1, None).to_numpy(dtype=float)
+            labels = d0["Label"].tolist()
+            plt.figure(figsize=(9, 5))
+            ax = plt.gca()
+            ax.scatter(x, y, s=sz * 12.0, alpha=0.85)
+            annotate_points(ax, x, y, labels, extra_vals={"x": x, "y": y})
+            pidx = pareto_indices_cost_minimize_benefit_maximize(x, y)
+            px, py = x[pidx], y[pidx]
+            order = np.argsort(px)  # menor latência à esquerda
+            ax.plot(px[order], py[order], marker="o", linewidth=1.5)
+            ax.set_xlabel("Latência (ms)")
+            ax.set_ylabel("mAP@0.5")
+            ax.set_title("Latência vs mAP@0.5 (bolha ~ tamanho do arquivo)")
+            ax.grid(True, alpha=0.3)
+            p = out_dir / "scatter_latency_vs_map50.png"
+            plt.tight_layout(); plt.savefig(p, dpi=160); plt.close()
+            saved.append(str(p))
+
+    # ------------- Barras: Params -------------
+    if "Params (M)" in dfr.columns and dfr["Params (M)"].notna().any():
+        d0 = dfr.dropna(subset=["Params (M)"]).copy().sort_values("Params (M)")
+        plt.figure(figsize=(10, 5))
+        plt.bar(d0["Label"], d0["Params (M)"])
+        for i, v in enumerate(d0["Params (M)"]):
+            plt.text(i, v, fmt2(v), ha="center", va="bottom", fontsize=8)
+        plt.ylabel("Parâmetros (M)")
+        plt.title("Parâmetros por modelo (runs)")
+        plt.xticks(rotation=30, ha="right")
+        plt.grid(axis="y", alpha=0.3)
+        p = out_dir / "bar_params.png"
+        plt.tight_layout(); plt.savefig(p, dpi=160); plt.close()
+        saved.append(str(p))
+
+    # ------------- Barras: Tamanho -------------
+    if "Size (MB)" in dfr.columns and dfr["Size (MB)"].notna().any():
+        d0 = dfr.dropna(subset=["Size (MB)"]).copy().sort_values("Size (MB)")
+        plt.figure(figsize=(10, 5))
+        plt.bar(d0["Label"], d0["Size (MB)"])
+        for i, v in enumerate(d0["Size (MB)"]):
+            plt.text(i, v, fmt2(v), ha="center", va="bottom", fontsize=8)
+        plt.ylabel("Tamanho do arquivo (MB)")
+        plt.title("Tamanho do checkpoint (runs)")
+        plt.xticks(rotation=30, ha="right")
+        plt.grid(axis="y", alpha=0.3)
+        p = out_dir / "bar_size.png"
+        plt.tight_layout(); plt.savefig(p, dpi=160); plt.close()
+        saved.append(str(p))
+
+    # ------------- Barras: Latência -------------
+    if "Latency (ms)" in dfr.columns and dfr["Latency (ms)"].notna().any():
+        d0 = dfr.dropna(subset=["Latency (ms)"]).copy().sort_values("Latency (ms)")
+        plt.figure(figsize=(10, 5))
+        plt.bar(d0["Label"], d0["Latency (ms)"])
+        for i, v in enumerate(d0["Latency (ms)"]):
+            plt.text(i, v, fmt2(v), ha="center", va="bottom", fontsize=8)
+        plt.ylabel("Latência (ms) @1x")
+        plt.title("Latência por modelo (runs)")
+        plt.xticks(rotation=30, ha="right")
+        plt.grid(axis="y", alpha=0.3)
+        p = out_dir / "bar_latency.png"
+        plt.tight_layout(); plt.savefig(p, dpi=160); plt.close()
+        saved.append(str(p))
+
+    # ------------- Barras: Eficiência (mAP@0.5 por M de params) -------------
+    if {"mAP@0.5", "Params (M)"}.issubset(dfr.columns):
+        d0 = dfr.dropna(subset=["mAP@0.5", "Params (M)"]).copy()
+        if not d0.empty:
+            d0["eff_map50_per_param"] = d0["mAP@0.5"] / d0["Params (M)"].replace(0, np.nan)
+            d0 = d0.dropna(subset=["eff_map50_per_param"]).sort_values("eff_map50_per_param", ascending=False)
+            if not d0.empty:
+                plt.figure(figsize=(10, 5))
+                plt.bar(d0["Label"], d0["eff_map50_per_param"])
+                for i, v in enumerate(d0["eff_map50_per_param"]):
+                    plt.text(i, v, fmt2(v), ha="center", va="bottom", fontsize=8)
+                plt.ylabel("mAP@0.5 por M de parâmetros")
+                plt.title("Eficiência de acurácia por parâmetros")
+                plt.xticks(rotation=30, ha="right")
+                plt.grid(axis="y", alpha=0.3)
+                p = out_dir / "bar_eff_map50_per_param.png"
+                plt.tight_layout(); plt.savefig(p, dpi=160); plt.close()
+                saved.append(str(p))
+
+    # ------------- Barras: Eficiência (mAP@0.5 por MB) -------------
+    if {"mAP@0.5", "Size (MB)"}.issubset(dfr.columns):
+        d0 = dfr.dropna(subset=["mAP@0.5", "Size (MB)"]).copy()
+        if not d0.empty:
+            d0["eff_map50_per_mb"] = d0["mAP@0.5"] / d0["Size (MB)"].replace(0, np.nan)
+            d0 = d0.dropna(subset=["eff_map50_per_mb"]).sort_values("eff_map50_per_mb", ascending=False)
+            if not d0.empty:
+                plt.figure(figsize=(10, 5))
+                plt.bar(d0["Label"], d0["eff_map50_per_mb"])
+                for i, v in enumerate(d0["eff_map50_per_mb"]):
+                    plt.text(i, v, fmt2(v), ha="center", va="bottom", fontsize=8)
+                plt.ylabel("mAP@0.5 por MB")
+                plt.title("Eficiência de acurácia por tamanho de arquivo")
+                plt.xticks(rotation=30, ha="right")
+                plt.grid(axis="y", alpha=0.3)
+                p = out_dir / "bar_eff_map50_per_mb.png"
+                plt.tight_layout(); plt.savefig(p, dpi=160); plt.close()
+                saved.append(str(p))
+
+    return saved
+# ---------------- FIM PLOTS ----------------
 
 def main():
     print(f"[env] Torch {torch.__version__} | CUDA avail: {torch.cuda.is_available()} | Device={DEVICE}")
@@ -173,6 +398,7 @@ def main():
             "ImgSize": summ.get("imgsz", IMGSZ),
             "Epochs": summ.get("epochs", ""),
             "Batch":  summ.get("batch", ""),
+            "File": str(best),
             "Size (MB)": size_mb,
             "mAP@0.5": res.get("mAP@0.5"),
             "mAP@0.5:0.95": res.get("mAP@0.5:0.95"),
@@ -204,6 +430,7 @@ def main():
             "ImgSize": IMGSZ,
             "Epochs": "",
             "Batch": "",
+            "File": str(ckpt),
             "Size (MB)": size_mb,
             "mAP@0.5": None,
             "mAP@0.5:0.95": None,
@@ -235,6 +462,10 @@ def main():
     out_md  = reports_dir / "model_report.md"
     df.to_csv(out_csv, index=False)
 
+    # GERA GRÁFICOS
+    pngs = make_plots(df, reports_dir)
+
+    # Markdown tabelado + imagens
     def df_to_md(d: pd.DataFrame) -> str:
         d2 = d.copy()
         for c in d2.columns:
@@ -242,11 +473,21 @@ def main():
                 d2[c] = d2[c].map(lambda x: f"{x:.4f}" if pd.notna(x) else "")
         return d2.to_markdown(index=False)
 
-    md = "# Model Report\n\n" + df_to_md(df) + "\n"
+    md = "# Model Report\n\n" + df_to_md(df) + "\n\n"
+    if pngs:
+        md += "## Gráficos\n\n"
+        for p in pngs:
+            rel = Path(p).as_posix()
+            md += f"![{Path(p).stem}]({rel})\n\n"
+
     out_md.write_text(md, encoding="utf-8")
 
     print(df_to_md(df))
     print(f"\nSalvo:\n- {out_csv}\n- {out_md}")
+    if pngs:
+        print("Gráficos:")
+        for p in pngs:
+            print(f"- {p}")
 
 if __name__ == "__main__":
     main()
