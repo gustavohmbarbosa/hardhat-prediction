@@ -1,10 +1,10 @@
 Kind,Run,Stage,Model,ImgSize,Epochs,Batch,File,Size (MB),mAP@0.5,mAP@0.5:0.95,Train Time (min),Params (M),FLOPs (G),Latency (ms)
-run,runs_train\reduced_min_320_tiny,reduced_arch,models\reduced_min_320_tiny.yaml,320,200,32,runs_train\reduced_min_320_tiny\weights\best.pt,0.735,0.83975,0.51835,190.3,0.3029,0.2154,4.964
-run,runs_train\reduced_min_640_tiny,reduced_arch,models/reduced_min_640_tiny.yaml,640,150,16,runs_train\reduced_min_640_tiny\weights\best.pt,0.766,0.87866,0.56175,0.0,0.3029,0.2154,4.585
-run,runs_train\reduced_min_320_v3,reduced_arch,models\reduced_min_320_v3.yaml,320,150,32,runs_train\reduced_min_320_v3\weights\best.pt,2.126,0.86515,0.54774,214.6,1.0207,0.4562,5.613
-run,runs_train\reduced_min_320_v2,reduced_arch,models\reduced_min_320_v2.yaml,320,100,32,runs_train\reduced_min_320_v2\weights\best.pt,3.109,0.861,0.54021,928.7,1.5387,0.5748,6.221
-run,runs_train\reduced_min_320_v1,reduced_arch,models\reduced_min_320_v1.yaml,320,10,16,runs_train\reduced_min_320_v1\weights\best.pt,3.603,0.76381,0.44928,997.9,1.7992,0.6469,7.091
-run,runs_train\baseline_v8n_320,,models\baseline_v8n_320.yaml,320,60,16,runs_train\baseline_v8n_320\weights\best.pt,5.923,0.8879,0.58029,1128.2,3.011,1.0243,7.23
-run,runs_train\baseline_v8n_640,reduced_arch,models\baseline_v8n_640.yaml,640,150,16,runs_train\baseline_v8n_640\weights\best.pt,5.971,0.91542,0.61566,0.0,3.011,1.0243,6.821
-run,runs_train\reduced_min_640_v2,reduced_arch,models\reduced_min_640_v2.yaml,640,150,16,runs_train\reduced_min_640_v2\weights\best.pt,3.154,0.90779,0.60264,340.8,1.5387,0.5748,10.385
-run,runs_train\reduced_min_640_v3,reduced_arch,models\reduced_min_640_v3.yaml,640,150,16,runs_train\reduced_min_640_v3\weights\best.pt,2.164,0.90301,0.59633,384.7,1.0207,0.4562,10.911
+run,runs_train\reduced_min_320_tiny,reduced_arch,models\reduced_min_320_tiny.yaml,320,200,32,runs_train\reduced_min_320_tiny\weights\best.pt,0.735,0.83975,0.51835,190.3,0.3029,0.2154,4.496
+run,runs_train\reduced_min_640_tiny,reduced_arch,models/reduced_min_640_tiny.yaml,640,150,16,runs_train\reduced_min_640_tiny\weights\best.pt,0.766,0.87866,0.56175,0.0,0.3029,0.2154,4.62
+run,runs_train\reduced_min_320_v3,reduced_arch,models\reduced_min_320_v3.yaml,320,150,32,runs_train\reduced_min_320_v3\weights\best.pt,2.126,0.86515,0.54774,214.6,1.0207,0.4562,6.948
+run,runs_train\reduced_min_640_v3,reduced_arch,models\reduced_min_640_v3.yaml,640,150,16,runs_train\reduced_min_640_v3\weights\best.pt,2.164,0.90301,0.59633,723.4,1.0207,0.4562,6.134
+run,runs_train\reduced_min_320_v2,reduced_arch,models\reduced_min_320_v2.yaml,320,100,32,runs_train\reduced_min_320_v2\weights\best.pt,3.109,0.861,0.54021,928.7,1.5387,0.5748,6.702
+run,runs_train\reduced_min_640_v2,reduced_arch,models\reduced_min_640_v2.yaml,640,150,16,runs_train\reduced_min_640_v2\weights\best.pt,3.154,0.90779,0.60264,0.0,1.5387,0.5748,6.136
+run,runs_train\reduced_min_320_v1,reduced_arch,models\reduced_min_320_v1.yaml,320,10,16,runs_train\reduced_min_320_v1\weights\best.pt,3.603,0.76381,0.44928,997.9,1.7992,0.6469,6.984
+run,runs_train\baseline_v8n_320,,models\baseline_v8n_320.yaml,320,60,16,runs_train\baseline_v8n_320\weights\best.pt,5.923,0.8879,0.58029,1128.2,3.011,1.0243,6.578
+run,runs_train\baseline_v8n_640,reduced_arch,models\baseline_v8n_640.yaml,640,150,16,runs_train\baseline_v8n_640\weights\best.pt,5.971,0.91542,0.61566,0.0,3.011,1.0243,6.585
