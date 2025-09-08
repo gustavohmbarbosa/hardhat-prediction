@@ -1,0 +1,17 @@
+{
+  "stage": "reduced_arch",
+  "model": "models\\baseline_v8n_640.yaml",
+  "data": "hardhat.yaml",
+  "imgsz": 640,
+  "epochs": 150,
+  "batch": 16,
+  "device": "cuda:0",
+  "run_dir": "runs_train\\baseline_v8n_640",
+  "best": "runs_train\\baseline_v8n_640\\weights\\best.pt",
+  "last": "runs_train\\baseline_v8n_640\\weights\\last.pt",
+  "report": {
+    "params_m": 3.011,
+    "flops_g": 4.0971
+  },
+  "time": "2025-09-08T04:34:00"
+}
