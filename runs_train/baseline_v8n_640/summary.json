@@ -1,0 +1,17 @@
+{
+  "stage": "baseline",
+  "model": "yolov8n.pt",
+  "data": "hardhat.yaml",
+  "imgsz": 640,
+  "epochs": 60,
+  "batch": 16,
+  "device": "cuda:0",
+  "run_dir": "/home/marco-antonio-matos-moraes/UFAPE_BCC/P6/RP/hardhat-prediction/runs_train/baseline_v8n_640",
+  "best": "/home/marco-antonio-matos-moraes/UFAPE_BCC/P6/RP/hardhat-prediction/runs_train/baseline_v8n_640/weights/best.pt",
+  "last": "/home/marco-antonio-matos-moraes/UFAPE_BCC/P6/RP/hardhat-prediction/runs_train/baseline_v8n_640/weights/last.pt",
+  "report": {
+    "params_m": 3.011,
+    "flops_g": 4.0971
+  },
+  "time": "2025-09-08T23:13:19"
+}
