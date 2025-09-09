@@ -1,0 +1,16 @@
+nc: 1
+
+scales:
+  n: [1.00, 1.00, 128]
+
+# [from, repeats, module, args]
+backbone:
+  - [-1, 1, DWConv, [16, 3, 2]]
+  - [-1, 1, DWConv, [24, 3, 2]]
+  - [-1, 1, DWConv, [24, 3, 1]]
+  - [-1, 1, DWConv, [32, 3, 2]]
+  - [-1, 1, DWConv, [32, 3, 1]]
+
+head:
+  - [-1, 1, DWConv, [32, 3, 1]]   # 5: head mínimo
+  - [[-1], 1, Detect, [nc]]     # 6: Detect apenas em P3
