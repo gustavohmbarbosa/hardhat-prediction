@@ -1,0 +1,17 @@
+{
+  "stage": "reduced_arch",
+  "model": "models\\reduced_min_640_pico.yaml",
+  "data": "hardhat.yaml",
+  "imgsz": 640,
+  "epochs": 250,
+  "batch": 16,
+  "device": "cuda:0",
+  "run_dir": "D:\\Users\\gusta\\projects\\rp\\runs_train\\reduced_min_640_pico",
+  "best": "D:\\Users\\gusta\\projects\\rp\\runs_train\\reduced_min_640_pico\\weights\\best.pt",
+  "last": "D:\\Users\\gusta\\projects\\rp\\runs_train\\reduced_min_640_pico\\weights\\last.pt",
+  "report": {
+    "params_m": 0.0812,
+    "flops_g": 0.5876
+  },
+  "time": "2025-09-09T08:01:39"
+}
