@@ -34,10 +34,10 @@ LAT_WARMUP = 10
 LAT_ITERS  = 100
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-# Pesos do score composto: score = A*mAP - B*log(Params) - C*Latency
-SCORE_A = 1.00   # peso da acurácia (mAP@0.5)
-SCORE_B = 0.35   # penalização por complexidade (log(Params))
-SCORE_C = 0.35   # penalização por latência
+# Pesos do score composto (A > B > C)
+SCORE_WA = 0.60  # mAP
+SCORE_WB = 0.25  # Params (baixo é melhor)
+SCORE_WC = 0.15  # Latência (baixo é melhor)
 
 # Títulos curtos
 MAX_LABEL_LEN = 60
@@ -315,7 +315,7 @@ def plot_bars(df: pd.DataFrame, col: str, title: str, fname: str, outdir: Path):
         "mAP@0.5:0.95": "Descrição: métrica mais exigente (IoU de 0.5 a 0.95). Retrata melhor a qualidade geral do detector.",
         "Efficiency (mAP/Params)": "Descrição: quanta precisão obtemos por milhão de parâmetros - eficiência do modelo.",
         "Efficiency (mAP/MB)": "Descrição: precisão por megabyte de arquivo - bom para escolher modelos compactos.",
-        "Score": "Descrição: ranking único que equilibra precisão, tamanho e velocidade (pesos A/B/C ajustáveis ao objetivo).",
+        "Score": "Descrição: Score composto (0–100) que pondera mAP (60%), número de parâmetros (25%) e latência (15%), priorizando precisão mas premiando modelos menores e mais rápidos.",
     }.get(col, "")
     if hint:
         add_caption(fig, hint)
@@ -325,6 +325,13 @@ def plot_bars(df: pd.DataFrame, col: str, title: str, fname: str, outdir: Path):
     plt.close(fig)
 
 
+def _norm01(x: pd.Series) -> pd.Series:
+    x = pd.to_numeric(x, errors="coerce")
+    xmin, xmax = x.min(skipna=True), x.max(skipna=True)
+    if not np.isfinite(xmin) or not np.isfinite(xmax) or xmax == xmin:
+        return pd.Series(np.nan, index=x.index)
+    return (x - xmin) / (xmax - xmin)
+
 def compute_efficiencies_and_score(df: pd.DataFrame) -> pd.DataFrame:
     d = df.copy()
     p = safe_series(d, "Params (M)")
@@ -332,16 +339,32 @@ def compute_efficiencies_and_score(df: pd.DataFrame) -> pd.DataFrame:
     m = safe_series(d, "mAP@0.5")
     lat = safe_series(d, "Latency (ms)")
 
+    # Eficiências auxiliares
     d["Efficiency (mAP/Params)"] = np.where((p > 0) & m.notna(), m / p, np.nan)
     d["Efficiency (mAP/MB)"]     = np.where((mb > 0) & m.notna(), m / mb, np.nan)
 
-    logp = np.where(p > 0, np.log(p), np.nan)
-    score = np.full(len(d), np.nan, dtype=float)
-    for i in range(len(d)):
-        if np.isfinite(m.iloc[i]) and np.isfinite(logp[i]) and np.isfinite(lat.iloc[i]):
-            score[i] = SCORE_A * m.iloc[i] - SCORE_B * logp[i] - SCORE_C * (lat.iloc[i] / 100.0)
+    # Utilidades normalizadas [0,1]
+    # A: mAP alto -> melhor
+    uA = _norm01(m)
+
+    # B: menos parâmetros melhor (usamos log para suavizar escala)
+    logp = pd.Series(np.where(p > 0, np.log(p), np.nan), index=d.index)
+    uB = _norm01(-logp)  # inverte: menor logp => maior utilidade
+
+    # C: menor latência melhor
+    uC = _norm01(-lat)
+
+    # Score final (0-100)
+    score = 100.0 * (SCORE_WA * uA + SCORE_WB * uB + SCORE_WC * uC)
     d["Score"] = score
+
+    # Extras úteis para depurar
+    d["uA_mAP"]     = uA
+    d["uB_params"]  = uB
+    d["uC_latency"] = uC
+
     return d
+
 
 
 # ----------------- MAIN -----------------
@@ -469,7 +492,7 @@ def main():
         ("mAP@0.5:0.95",      "mAP@0.5:0.95",              "bars_map5095.png"),
         ("Efficiency (mAP/Params)", "Eficiência mAP por Params", "bars_eff_map_per_params.png"),
         ("Efficiency (mAP/MB)",     "Eficiência mAP por MB",     "bars_eff_map_per_mb.png"),
-        ("Score",             f"Score composto (A={SCORE_A}, B={SCORE_B}, C={SCORE_C})", "bars_score.png"),
+        ("Score", f"Score composto (A={SCORE_WA}, B={SCORE_WB}, C={SCORE_WC})", "bars_score.png"),
     ]:
         try:
             if col in df_scored.columns:
