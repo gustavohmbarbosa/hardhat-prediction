@@ -1,16 +1,28 @@
+# Objetivo: arquitetura simples e leve para objetos pequenos/médios.
+# Notação de pirâmide: P1/2, P2/4, P3/8 = stride 2, 4, 8 (ex.: imagem 640x640 -> P3 ≈ 80x80).
+# DWConv = "depthwise separable conv" (bem mais leve que conv normal).
+
 nc: 1
 
 scales:
   n: [1.00, 1.00, 128]
 
-# [from, repeats, module, args]
-backbone:
-  - [-1, 1, DWConv, [16, 3, 2]]
-  - [-1, 1, DWConv, [24, 3, 2]]
-  - [-1, 1, DWConv, [24, 3, 1]]
-  - [-1, 1, DWConv, [32, 3, 2]]
-  - [-1, 1, DWConv, [32, 3, 1]]
+# ---------------- BACKBONE (extrai características) ----------------
+# Formato das linhas: [from, repeats, module, args]
+# - from: -1 usa a saída da camada anterior
+# - repeats: quantas repetições em sequência (aqui todas 1, rede bem rasa)
+# - module: tipo do bloco (DWConv = depthwise conv leve)
+# - args: [c_out, kernel, stride]
 
+backbone:
+  - [-1, 1, DWConv, [16, 3, 2]]  # (Entrada 3ch → 16ch) Downsample p/ P1/2. Aprende bordas/texturas iniciais com custo baixo.
+  - [-1, 1, DWConv, [24, 3, 2]]  # (16 → 24ch) Downsample p/ P2/4. Aumenta campo de visão mantendo leveza.
+  - [-1, 1, DWConv, [24, 3, 1]]  # (24 → 24ch) Refinamento em P2/4 (stride 1). Enriquecimento sem reduzir resolução.
+  - [-1, 1, DWConv, [32, 3, 2]]  # (24 → 32ch) Downsample p/ P3/8. Nível onde faremos a detecção (bom p/ objetos pequenos).
+  - [-1, 1, DWConv, [32, 3, 1]]  # (32 → 32ch) Refinamento final em P3/8. Prepara melhor as features p/ a cabeça (head).
+
+# ---------------- HEAD (fusão/refino e predição) ----------------
 head:
-  - [-1, 1, DWConv, [32, 3, 1]]   # 5: head mínimo
-  - [[-1], 1, Detect, [nc]]     # 6: Detect apenas em P3
+  - [-1, 1, DWConv, [32, 3, 1]]   # Refino leve no P3/8 antes de prever (mantém barato; ajuda a estabilizar a saída).
+  - [[-1], 1, Detect, [nc]]       # Detect APENAS em P3 (stride 8). YOLOv8 é anchor-free + DFL p/ coordenadas.
+                                  # Trade-offs: +leve/+rápido; pode perder objetos muito grandes (sem P4/P5).
